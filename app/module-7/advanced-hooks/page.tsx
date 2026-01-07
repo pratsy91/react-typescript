@@ -1129,6 +1129,351 @@ function useValidatedId(prefix?: string): string {
           use for list keys - use the key prop instead. Type is always string.
         </InfoBox>
       </Section>
+
+      <Section title="6. React 19 Hooks">
+        <p className="text-gray-700 dark:text-gray-300">
+          React 19 introduces new hooks for form handling, optimistic updates,
+          and server actions. These hooks provide type-safe patterns for modern
+          React applications.
+        </p>
+
+        <CodeBlock title="useActionState Hook (React 19)">
+          {`// useActionState for form actions with state
+// Replaces useFormState (deprecated)
+
+interface FormState {
+  message: string;
+  errors?: Record<string, string>;
+}
+
+async function formAction(
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const name = formData.get("name") as string;
+  
+  if (!name) {
+    return { message: "", errors: { name: "Name is required" } };
+  }
+  
+  // Simulate API call
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+  return { message: \`Hello, \${name}!\` };
+}
+
+function FormComponent() {
+  const [state, formAction, isPending] = React.useActionState(
+    formAction,
+    { message: "" }
+  );
+  
+  return (
+    <form action={formAction}>
+      <input name="name" />
+      {state.errors?.name && <p>{state.errors.name}</p>}
+      {state.message && <p>{state.message}</p>}
+      <button type="submit" disabled={isPending}>
+        {isPending ? "Submitting..." : "Submit"}
+      </button>
+    </form>
+  );
+}
+
+// Typed useActionState with generic
+function useTypedActionState<TState, TAction>(
+  action: (prevState: TState, formData: FormData) => Promise<TState>,
+  initialState: TState
+): [TState, (formData: FormData) => void, boolean] {
+  return React.useActionState(action, initialState);
+}
+
+// Usage with typed state
+interface LoginState {
+  success: boolean;
+  error?: string;
+}
+
+async function loginAction(
+  prevState: LoginState,
+  formData: FormData
+): Promise<LoginState> {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  
+  if (!email || !password) {
+    return { success: false, error: "Email and password required" };
+  }
+  
+  // Login logic
+  return { success: true };
+}
+
+function LoginForm() {
+  const [state, loginActionHandler, isPending] = useTypedActionState(
+    loginAction,
+    { success: false }
+  );
+  
+  return (
+    <form action={loginActionHandler}>
+      <input name="email" type="email" />
+      <input name="password" type="password" />
+      {state.error && <p>{state.error}</p>}
+      <button type="submit" disabled={isPending}>
+        Login
+      </button>
+    </form>
+  );
+}`}
+        </CodeBlock>
+
+        <CodeBlock title="useOptimistic Hook (React 19)">
+          {`// useOptimistic for optimistic UI updates
+interface Message {
+  id: number;
+  text: string;
+}
+
+async function sendMessage(text: string): Promise<Message> {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  return { id: Date.now(), text };
+}
+
+function MessageList({ messages }: { messages: Message[] }) {
+  const [optimisticMessages, addOptimisticMessage] = React.useOptimistic(
+    messages,
+    (state: Message[], newMessage: string) => [
+      ...state,
+      { id: Date.now(), text: newMessage, pending: true },
+    ]
+  );
+  
+  async function handleSubmit(formData: FormData) {
+    const text = formData.get("text") as string;
+    
+    // Optimistically add message
+    addOptimisticMessage(text);
+    
+    // Send to server
+    await sendMessage(text);
+  }
+  
+  return (
+    <div>
+      {optimisticMessages.map((msg) => (
+        <div key={msg.id}>
+          {msg.text}
+          {msg.pending && <span> (sending...)</span>}
+        </div>
+      ))}
+      <form action={handleSubmit}>
+        <input name="text" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  );
+}
+
+// Typed useOptimistic with reducer
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+type OptimisticAction =
+  | { type: "add"; text: string }
+  | { type: "toggle"; id: number }
+  | { type: "delete"; id: number };
+
+function TodoList({ todos }: { todos: Todo[] }) {
+  const [optimisticTodos, updateOptimistic] = React.useOptimistic(
+    todos,
+    (state: Todo[], action: OptimisticAction) => {
+      switch (action.type) {
+        case "add":
+          return [...state, { id: Date.now(), text: action.text, completed: false }];
+        case "toggle":
+          return state.map((todo) =>
+            todo.id === action.id ? { ...todo, completed: !todo.completed } : todo
+          );
+        case "delete":
+          return state.filter((todo) => todo.id !== action.id);
+        default:
+          return state;
+      }
+    }
+  );
+  
+  return (
+    <ul>
+      {optimisticTodos.map((todo) => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  );
+}`}
+        </CodeBlock>
+
+        <CodeBlock title="useFormStatus Hook (React 19)">
+          {`// useFormStatus for form submission status
+// Must be used within a form action context
+
+function SubmitButton() {
+  const { pending, data, method, action } = React.useFormStatus();
+  
+  return (
+    <button type="submit" disabled={pending}>
+      {pending ? "Submitting..." : "Submit"}
+    </button>
+  );
+}
+
+// Typed form status
+interface FormStatus {
+  pending: boolean;
+  data: FormData | null;
+  method: "get" | "post" | null;
+  action: string | ((formData: FormData) => void) | null;
+}
+
+function useTypedFormStatus(): FormStatus {
+  return React.useFormStatus();
+}
+
+// Usage in form
+async function submitAction(formData: FormData) {
+  "use server";
+  // Server action
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+
+function ContactForm() {
+  return (
+    <form action={submitAction}>
+      <input name="email" />
+      <SubmitButton />
+    </form>
+  );
+}
+
+// Form status with error handling
+function FormWithStatus() {
+  const { pending, data } = React.useFormStatus();
+  
+  return (
+    <>
+      <input name="name" disabled={pending} />
+      {pending && <p>Submitting form...</p>}
+      {data && !pending && <p>Form submitted!</p>}
+    </>
+  );
+}`}
+        </CodeBlock>
+
+        <CodeBlock title="Combining React 19 Hooks">
+          {`// Complete form with React 19 hooks
+interface CommentState {
+  comments: Comment[];
+  error?: string;
+}
+
+interface Comment {
+  id: number;
+  text: string;
+  author: string;
+}
+
+async function addCommentAction(
+  prevState: CommentState,
+  formData: FormData
+): Promise<CommentState> {
+  const text = formData.get("text") as string;
+  const author = formData.get("author") as string;
+  
+  if (!text || !author) {
+    return {
+      ...prevState,
+      error: "Text and author are required",
+    };
+  }
+  
+  // Simulate API call
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+  const newComment: Comment = {
+    id: Date.now(),
+    text,
+    author,
+  };
+  
+  return {
+    comments: [...prevState.comments, newComment],
+    error: undefined,
+  };
+}
+
+function CommentForm() {
+  const [state, formAction, isPending] = React.useActionState(
+    addCommentAction,
+    { comments: [] }
+  );
+  
+  const [optimisticComments, addOptimistic] = React.useOptimistic(
+    state.comments,
+    (state: Comment[], newComment: Omit<Comment, "id">) => [
+      ...state,
+      { ...newComment, id: Date.now(), pending: true },
+    ]
+  );
+  
+  async function handleSubmit(formData: FormData) {
+    const text = formData.get("text") as string;
+    const author = formData.get("author") as string;
+    
+    // Optimistic update
+    addOptimistic({ text, author });
+    
+    // Submit to server
+    formAction(formData);
+  }
+  
+  return (
+    <div>
+      <form action={handleSubmit}>
+        <input name="text" placeholder="Comment" />
+        <input name="author" placeholder="Your name" />
+        {state.error && <p>{state.error}</p>}
+        <button type="submit" disabled={isPending}>
+          {isPending ? "Posting..." : "Post Comment"}
+        </button>
+      </form>
+      
+      <div>
+        {optimisticComments.map((comment) => (
+          <div key={comment.id}>
+            <strong>{comment.author}:</strong> {comment.text}
+            {comment.pending && <span> (posting...)</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}`}
+        </CodeBlock>
+
+        <InfoBox type="important">
+          <strong>React 19 Hooks:</strong>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>useActionState: Replaces useFormState, typed with state and action</li>
+            <li>useOptimistic: Optimistic UI updates with typed reducer</li>
+            <li>useFormStatus: Form submission status, must be in form context</li>
+            <li>All hooks are fully typed and work with TypeScript</li>
+            <li>Perfect for Next.js Server Actions integration</li>
+          </ul>
+        </InfoBox>
+      </Section>
     </div>
   );
 }

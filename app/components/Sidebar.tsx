@@ -396,6 +396,10 @@ const modules: Module[] = [
           "useSyncExternalStore",
           "useDebugValue",
           "useId",
+          "React 19 hooks",
+          "useActionState",
+          "useOptimistic",
+          "useFormStatus",
         ],
       },
     ],
@@ -1120,6 +1124,20 @@ const modules: Module[] = [
           "NextPage types",
         ],
       },
+      {
+        id: "advanced-app-router",
+        title: "Advanced App Router Types",
+        topics: [
+          "Suspense and streaming",
+          "loading and error boundaries",
+          "route groups",
+          "parallel routes",
+          "intercepting routes",
+          "caching and revalidation",
+          "environment variables",
+          "font optimization",
+        ],
+      },
     ],
   },
   {
@@ -1180,6 +1198,61 @@ const modules: Module[] = [
           "React type patterns",
           "common type patterns",
           "interview checklist",
+        ],
+      },
+    ],
+  },
+  {
+    id: "module-26",
+    title: "Module 26: Debugging Interview Questions",
+    lessons: [
+      {
+        id: "typescript-debugging",
+        title: "TypeScript Debugging",
+        topics: [
+          "type inference issues",
+          "generic type issues",
+          "type assertion problems",
+          "utility type errors",
+        ],
+      },
+      {
+        id: "react-debugging",
+        title: "React + TypeScript Debugging",
+        topics: [
+          "component props issues",
+          "hooks type issues",
+          "ref forwarding problems",
+          "generic component errors",
+        ],
+      },
+      {
+        id: "nextjs-debugging",
+        title: "Next.js + TypeScript Debugging",
+        topics: [
+          "App Router type issues",
+          "metadata and server components",
+          "Next.js component issues",
+        ],
+      },
+      {
+        id: "advanced-debugging",
+        title: "Advanced Debugging",
+        topics: [
+          "complex type errors",
+          "React performance type issues",
+          "Next.js advanced issues",
+          "common interview patterns",
+        ],
+      },
+      {
+        id: "common-patterns",
+        title: "Common Debugging Patterns",
+        topics: [
+          "event handler patterns",
+          "state management patterns",
+          "form handling patterns",
+          "API and data fetching",
         ],
       },
     ],
